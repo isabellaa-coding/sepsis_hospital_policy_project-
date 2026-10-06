@@ -6,6 +6,7 @@ import random
 from datetime import datetime, timedelta
 
 random.seed(42)  # same "random" data every run, so results are reproducible
+code_rng = random.Random(7)  # separate generator for diagnosis codes, so adding codes doesn't change the other data
 
 NUM_ENCOUNTERS = 300
 UNITS = ["Med/Surg A", "Med/Surg B", "Telemetry", "Step-Down"]
@@ -127,6 +128,42 @@ def make_bundle_times(time_zero, labs):
     return times
 
 
+# ---------- Diagnosis codes (what was documented and coded) ----------
+# A41.9  = sepsis, unspecified organism
+# R65.20 = severe sepsis without septic shock
+# R65.21 = severe sepsis with septic shock
+# Infection source codes: J18.9 pneumonia, N39.0 UTI, L03.90 cellulitis
+
+INFECTION_CODES = ["J18.9", "N39.0", "L03.90"]
+
+
+def make_codes(case, infection, labs):
+    codes = []
+    if infection in ("known", "suspected"):
+        codes.append(code_rng.choice(INFECTION_CODES))
+
+    roll = code_rng.random()
+    if case == "severe":
+        if roll < 0.70:
+            # Documented and coded correctly
+            shock = labs["lactate"] >= 4 or labs["SBP"] < 90 or labs["MAP"] < 65
+            codes += ["A41.9", "R65.21" if shock and code_rng.random() < 0.3 else "R65.20"]
+        elif roll < 0.92:
+            codes.append("A41.9")  # sepsis documented, severity missing
+        # else: sepsis never documented at all
+    elif case == "sepsis":
+        if roll < 0.85:
+            codes.append("A41.9")
+        elif roll < 0.95:
+            codes += ["A41.9", "R65.20"]  # severe sepsis coded without support
+        # else: sepsis never documented
+    else:
+        if roll < 0.08:
+            codes.append("A41.9")  # sepsis coded without support
+
+    return ";".join(codes)
+
+
 # ---------- Build one encounter ----------
 
 def make_encounter(encounter_id):
@@ -167,6 +204,7 @@ def make_encounter(encounter_id):
         "infection": infection,
         **sirs,
         **labs,
+        "dx_codes": make_codes(case, infection, labs),
     }
 
     # Only severe sepsis cases get a time zero and bundle timestamps
@@ -190,7 +228,7 @@ COLUMNS = ["encounter_id", "unit", "infection",
            "temp", "HR", "RR", "WBC", "bands",
            "SBP", "MAP", "lactate", "creatinine", "platelets", "INR", "bilirubin",
            "time_zero", "lactate_time", "cultures_time", "abx_time",
-           "fluids_time", "repeat_lactate_time"]
+           "fluids_time", "repeat_lactate_time", "dx_codes"]
 
 with open("sepsis_encounters.csv", "w", newline="") as f:
     writer = csv.DictWriter(f, fieldnames=COLUMNS)
