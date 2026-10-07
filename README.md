@@ -20,6 +20,8 @@ The project has four scripts.
 
 `sepsis_documentation_gaps.py` compares each patient's criteria with their codes. It flags two kinds of cases: query opportunities, where the criteria are met but the condition wasn't coded, and clinical validation reviews, where the condition was coded but the criteria aren't met. Codes come from provider documentation, so these are cases for CDI to review, not codes to change automatically.
 
+`sepsis_results.xlsx` is an Excel version of the results. It has the bundle results for every severe sepsis case, summary tables built with COUNTIF and COUNTIFS formulas, and charts for compliance by element, failure reasons, compliance by unit, and documentation gaps.
+
 ## Criteria
 
 The rules follow SEP-1 for non-pregnant adults.
@@ -55,25 +57,31 @@ The first creates `sepsis_encounters.csv`. The second screens the six test patie
 
 ### Bundle compliance
 
-140 of the 300 encounters met severe sepsis criteria. Overall bundle compliance was 25%.
+137 of the 300 encounters met severe sepsis criteria. Overall bundle compliance was 58%.
 
 | Element | Compliance |
 |---|---|
-| Initial lactate (3 hr) | 81% |
-| Cultures before antibiotics | 79% |
-| Fluids 30 mL/kg (3 hr) | 68% |
-| Antibiotics (3 hr) | 66% |
-| Repeat lactate (6 hr) | 43% |
+| Cultures before antibiotics | 93% |
+| Initial lactate (3 hr) | 92% |
+| Fluids 30 mL/kg (3 hr) | 85% |
+| Antibiotics (3 hr) | 82% |
+| Repeat lactate (6 hr) | 72% |
+
+Repeat lactate was the weakest element. Most failures were late rather than missed, and antibiotics had the most late cases.
 
 These numbers come from how I set up the generator, not from real performance. Units were assigned at random, so the differences between them are just variation in small samples.
 
+### How this compares to real hospitals
+
+Real SEP-1 compliance varies a lot between hospitals. In 2017 data, hospitals averaged about 49%, with most falling somewhere between 30% and 70% [1]. State averages ranged from 9% to 63%, and New York came in at 47% [2]. Safety-net and non-safety-net hospitals scored about the same, 48% and 50% [3]. Performance has improved since then, and by 2025 some hospitals were scoring 95% or higher [4]. My synthetic result of 58% falls within the realistic range. Current hospital-level scores are available in CMS's public Timely and Effective Care dataset [5].
+
 ### Documentation gaps
 
-57 encounters were flagged. 43 were query opportunities, and the most common was severe sepsis criteria met but coded as sepsis only (32 cases). The other 14 were clinical validation reviews, where sepsis or severe sepsis was coded without the criteria to support it.
+58 encounters were flagged. 46 were query opportunities, and the most common was severe sepsis criteria met but coded as sepsis only (27 cases). The other 12 were clinical validation reviews, where sepsis or severe sepsis was coded without the criteria to support it.
 
 ## Next steps
 
-Next, I want to make the generator's timing more realistic, add the full SEP-1 time windows, and compare results under Sepsis-3, which many payers use for clinical validation.
+Next, I want to add the full SEP-1 time windows.
 
 This project is for learning and portfolio purposes only and isn't a clinical tool.
 
@@ -82,3 +90,15 @@ This project is for learning and portfolio purposes only and isn't a clinical to
 Centers for Medicare & Medicaid Services. Specifications Manual for National Hospital Inpatient Quality Measures, SEP-1: Severe Sepsis and Septic Shock: Management Bundle. QualityNet. https://qualitynet.cms.gov
 
 Centers for Medicare & Medicaid Services, Hospital Inpatient Quality Reporting Program. SEP-1 presentation slides, March 2023. Quality Reporting Center. https://www.qualityreportingcenter.com/globalassets/iqr-2023-events/iqr32423/march2023_sep_1_npc_final508.pdf
+
+### Real-world comparison sources
+
+[1] Barbash IJ, et al. National Performance on the Medicare SEP-1 Sepsis Quality Measure. Critical Care Medicine, 2019. https://pubmed.ncbi.nlm.nih.gov/30585827/
+
+[2] State-level hospital compliance with and performance in the Centers for Medicare & Medicaid Services' Early Management Severe Sepsis and Septic Shock Bundle. Critical Care, 2019. https://pmc.ncbi.nlm.nih.gov/articles/PMC6421646
+
+[3] Study comparing SEP-1 compliance at safety-net and non-safety-net hospitals. Journal of Critical Care, 2019. https://pmc.ncbi.nlm.nih.gov/articles/PMC6901718/
+
+[4] Becker's Hospital Review. 25 hospitals with the highest SEP-1 scores: CMS. https://www.beckershospitalreview.com/quality/patient-safety-outcomes/25-hospitals-with-the-highest-sep-1-scores-cms/
+
+[5] Centers for Medicare & Medicaid Services. Timely and Effective Care - Hospital. Provider Data Catalog. https://data.cms.gov/provider-data/dataset/yv7e-xc69
