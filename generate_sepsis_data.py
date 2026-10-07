@@ -6,7 +6,8 @@ import random
 from datetime import datetime, timedelta
 
 random.seed(42)  # same "random" data every run, so results are reproducible
-code_rng = random.Random(7)  # separate generator for diagnosis codes, so adding codes doesn't change the other data
+code_rng = random.Random(7)
+bundle_rng = random.Random(11)  # separate generator for bundle timing  # separate generator for diagnosis codes, so adding codes doesn't change the other data
 
 NUM_ENCOUNTERS = 300
 UNITS = ["Med/Surg A", "Med/Surg B", "Telemetry", "Step-Down"]
@@ -85,43 +86,52 @@ def fmt(t):
 
 # ---------- Bundle timestamps for severe sepsis cases ----------
 
+def minutes_with_tail(rng, on_time_share, on_time_range, late_range):
+    # Most cases land inside the window; a realistic share run late
+    if rng.random() < on_time_share:
+        return rng.randint(*on_time_range)
+    return rng.randint(*late_range)
+
+
 def make_bundle_times(time_zero, labs):
+    # Uses its own random generator, so tuning these delays never changes the patients
+    rng = bundle_rng
     times = {}
 
-    # Initial lactate: usually done, usually on time
-    if random.random() < 0.95:
-        times["lactate_time"] = time_zero + timedelta(minutes=random.randint(5, 210))
+    # Initial lactate: almost always drawn, usually within 3 hours
+    if rng.random() < 0.97:
+        times["lactate_time"] = time_zero + timedelta(minutes=minutes_with_tail(rng, 0.92, (5, 150), (185, 300)))
     else:
         times["lactate_time"] = None
 
-    # Antibiotics: usually given; some late
-    if random.random() < 0.96:
-        abx = time_zero + timedelta(minutes=random.randint(15, 260))
+    # Antibiotics: almost always given, most within 3 hours
+    if rng.random() < 0.98:
+        abx = time_zero + timedelta(minutes=minutes_with_tail(rng, 0.86, (15, 170), (185, 320)))
     else:
         abx = None
     times["abx_time"] = abx
 
-    # Blood cultures: usually before antibiotics, sometimes after, sometimes missed
-    roll = random.random()
-    if abx and roll < 0.82:
-        times["cultures_time"] = abx - timedelta(minutes=random.randint(5, 60))
-    elif abx and roll < 0.95:
-        times["cultures_time"] = abx + timedelta(minutes=random.randint(10, 90))  # after abx = fail
-    elif not abx and roll < 0.9:
-        times["cultures_time"] = time_zero + timedelta(minutes=random.randint(10, 120))
+    # Blood cultures: usually before antibiotics, occasionally after or missed
+    roll = rng.random()
+    if abx and roll < 0.92:
+        times["cultures_time"] = abx - timedelta(minutes=rng.randint(5, 60))
+    elif abx and roll < 0.97:
+        times["cultures_time"] = abx + timedelta(minutes=rng.randint(10, 90))  # after abx = fail
+    elif not abx and roll < 0.95:
+        times["cultures_time"] = time_zero + timedelta(minutes=rng.randint(10, 120))
     else:
         times["cultures_time"] = None
 
     # Fluids: only expected if hypotensive or lactate >= 4
     needs_fluids = labs["SBP"] < 90 or labs["MAP"] < 65 or labs["lactate"] >= 4
-    if needs_fluids and random.random() < 0.88:
-        times["fluids_time"] = time_zero + timedelta(minutes=random.randint(10, 240))
+    if needs_fluids and rng.random() < 0.95:
+        times["fluids_time"] = time_zero + timedelta(minutes=minutes_with_tail(rng, 0.88, (10, 170), (185, 300)))
     else:
         times["fluids_time"] = None
 
     # Repeat lactate: only expected if initial lactate > 2
-    if labs["lactate"] > 2 and random.random() < 0.78:
-        times["repeat_lactate_time"] = time_zero + timedelta(minutes=random.randint(120, 480))
+    if labs["lactate"] > 2 and rng.random() < 0.90:
+        times["repeat_lactate_time"] = time_zero + timedelta(minutes=minutes_with_tail(rng, 0.88, (120, 350), (370, 540)))
     else:
         times["repeat_lactate_time"] = None
 
