@@ -4,7 +4,7 @@
 import csv
 import random
 from datetime import datetime, timedelta
- 
+
 random.seed(42)  # same "random" data every run, so results are reproducible
 code_rng = random.Random(7)
 bundle_rng = random.Random(11)  # separate generator for bundle timing  # separate generator for diagnosis codes, so adding codes doesn't change the other data
