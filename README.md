@@ -69,6 +69,12 @@ The first creates `sepsis_encounters.csv`. The second screens the six test patie
 
 Repeat lactate was the weakest element. Most failures were late rather than missed, and antibiotics had the most late cases.
 
+![SEP-1 bundle compliance by element](compliance_by_element.png)
+
+![Why bundle elements failed](failure_reasons.png)
+
+These charts come from the Excel workbook (`sepsis_results.xlsx`).
+
 These numbers come from how I set up the generator, not from real performance. Units were assigned at random, so the differences between them are just variation in small samples.
 
 ### How this compares to real hospitals
